@@ -87,11 +87,16 @@ def main():
     with open(os.path.join(OUT_DIR, 'train_class_counts.json'), 'w', encoding='utf-8') as f:
         json.dump(class_counts, f, indent=2)
 
+    # Сохраняем маппинг классов (индекс → название планеты)
+    idx_to_name = {str(v): k for k, v in label_mapping.items()}
+    with open(os.path.join(OUT_DIR, 'label_mapping.json'), 'w', encoding='utf-8') as f:
+        json.dump(idx_to_name, f, indent=2, ensure_ascii=False)
+
     # Топ-5 классов в валидации
     unique_v, counts_v = np.unique(valid_y, return_counts=True)
     top5 = sorted(zip(unique_v.tolist(), counts_v.tolist()), key=lambda x: -x[1])[:5]
     valid_top5 = {
-        'labels': ['Класс ' + str(c) for c, _ in top5],
+        'labels': [idx_to_name.get(str(c), str(c)) for c, _ in top5],
         'values': [v for _, v in top5],
     }
     with open(os.path.join(OUT_DIR, 'valid_top5.json'), 'w', encoding='utf-8') as f:

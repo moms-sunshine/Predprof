@@ -4,15 +4,25 @@
 import numpy as np
 
 
+HASH_PREFIX_LEN = 32  # MD5-хэш в начале каждой метки
+
+
+def extract_planet_name(label: str) -> str:
+    """Отрезает 32-символьный MD5-хэш и возвращает название планеты."""
+    s = str(label)
+    if len(s) > HASH_PREFIX_LEN:
+        return s[HASH_PREFIX_LEN:]
+    return s
+
+
 def get_label_mapping(labels: np.ndarray) -> dict:
     """
     Строит взаимно однозначное отображение уникальных значений (строк) в целые 0..n-1.
-    Порядок — по первой встрече в массиве (или отсортированный для детерминизма).
+    Хэш-префикс отрезается — реальный класс это название планеты.
     """
     flat = np.asarray(labels).ravel()
-    # Уникальные значения в порядке появления (или сортировка для стабильности)
-    unique = np.unique(flat.astype(str))
-    return {str(u): i for i, u in enumerate(unique)}
+    unique = sorted(set(extract_planet_name(v) for v in flat))
+    return {u: i for i, u in enumerate(unique)}
 
 
 def restore_labels(labels: np.ndarray, mapping: dict = None):
@@ -23,7 +33,7 @@ def restore_labels(labels: np.ndarray, mapping: dict = None):
     labels = np.asarray(labels)
     if mapping is None:
         mapping = get_label_mapping(labels)
-    restored = np.array([mapping[str(l)] for l in labels.ravel()], dtype=np.int32)
+    restored = np.array([mapping[extract_planet_name(str(l))] for l in labels.ravel()], dtype=np.int32)
     if labels.shape != restored.shape:
         restored = restored.reshape(labels.shape)
     return restored, mapping
