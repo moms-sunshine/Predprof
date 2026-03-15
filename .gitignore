@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.Python
+venv/
+.venv/
+env/
+
+# Django
+*.log
+db.sqlite3
+media/
+staticfiles/
+*.pot
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# Data (большие файлы — качать по ссылке)
+*.npz
+Data.npz
+
+# ML модель (большой бинарный файл)
+*.h5
+*.keras

@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% block title %}Профиль{% endblock %}
+{% block content %}
+<h1>Информация о пользователе</h1>
+<table>
+    <tr><td><strong>Логин:</strong></td><td>{{ user.username }}</td></tr>
+    <tr><td><strong>Имя:</strong></td><td>{{ user.first_name|default:"—" }}</td></tr>
+    <tr><td><strong>Фамилия:</strong></td><td>{{ user.last_name|default:"—" }}</td></tr>
+    <tr><td><strong>Роль:</strong></td><td>{% if user.is_admin_role %}Администратор{% else %}Пользователь{% endif %}</td></tr>
+</table>
+{% if not user.is_admin_role %}
+<p><a href="{% url 'main:upload' %}" class="btn">Загрузить тестовый набор данных</a></p>
+<p><a href="{% url 'main:analytics' %}" class="btn">Перейти к аналитике</a></p>
+{% endif %}
+{% endblock %}

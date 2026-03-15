@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% block title %}Аналитика{% endblock %}
+{% block content %}
+<h1>Графики и диаграммы</h1>
+<p>Графики построены с помощью Matplotlib. Для масштабирования используйте масштаб страницы (Ctrl + колесо мыши) или откройте изображение в новой вкладке.</p>
+
+{% if last_test %}
+<p><strong>Результаты по последнему загруженному тестовому набору:</strong> точность = {{ last_test.accuracy|floatformat:4 }}, потери = {{ last_test.loss|floatformat:4 }}</p>
+{% else %}
+<p>Загрузите тестовый набор на <a href="{% url 'main:upload' %}">странице загрузки</a>, чтобы увидеть точность и потери.</p>
+{% endif %}
+
+<div class="chart-container">
+    <h2>Точность на валидации от количества эпох</h2>
+    <img src="{% url 'main:chart_epochs' %}" alt="График по эпохам" style="max-width:100%; height:auto;">
+</div>
+
+<div class="chart-container">
+    <h2>Количество записей по классам (обучение)</h2>
+    <img src="{% url 'main:chart_classes' %}" alt="Записи по классам" style="max-width:100%; height:auto;">
+</div>
+
+<div class="chart-container">
+    <h2>Точность по записям тестового набора</h2>
+    <img src="{% url 'main:chart_per_record' %}" alt="Точность по записям" style="max-width:100%; height:auto;">
+</div>
+
+<div class="chart-container">
+    <h2>Топ-5 классов в валидационном наборе</h2>
+    <img src="{% url 'main:chart_top5' %}" alt="Топ-5 классов" style="max-width:100%; height:auto;">
+</div>
+{% endblock %}

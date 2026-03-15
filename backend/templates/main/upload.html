@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% block title %}Загрузка тестового набора{% endblock %}
+{% block content %}
+<h1>Загрузка тестового набора данных</h1>
+<p>Выберите файл в формате .npz (массивы test_x и test_y). После загрузки будут посчитаны точность и потери на тестовом наборе, результаты можно посмотреть в разделе «Аналитика».</p>
+<form method="post" action="{% url 'main:upload' %}" enctype="multipart/form-data">
+    {% csrf_token %}
+    <div class="form-group">
+        <label for="test_file">Файл .npz</label>
+        <input type="file" name="test_file" id="test_file" accept=".npz" required>
+    </div>
+    <button type="submit" class="btn">Загрузить</button>
+    <a href="{% url 'main:profile' %}" class="btn btn-secondary">Назад</a>
+</form>
+{% endblock %}
