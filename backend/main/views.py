@@ -127,9 +127,24 @@ def _evaluate_model(model_path, test_x, test_y, train_y=None):
     except Exception:
         return 0.0, 0.0, {}
 
-    X = np.array([np.array(x, dtype=np.float32) for x in test_x])
-    if X.ndim == 1:
-        X = np.expand_dims(X, 0)
+    import joblib
+
+    def _extract_fft_features(arr):
+        result = []
+        for x in arr:
+            x = np.array(x, dtype=np.float32).ravel()
+            stats = [x.mean(), x.std(), float(np.median(x)), float(x.max()-x.min()),
+                     float(np.percentile(x, 25)), float(np.percentile(x, 75)),
+                     float(np.sum(x**2)/len(x))]
+            fft = np.abs(np.fft.rfft(x))[:500].tolist()
+            result.append(stats + fft)
+        return np.array(result, dtype=np.float32)
+
+    ml_dir    = os.path.join(os.path.dirname(__file__), '..', '..', 'ml')
+    scaler_path = os.path.join(ml_dir, 'scaler.pkl')
+    pca_path    = os.path.join(ml_dir, 'pca.pkl')
+    svm_path    = os.path.join(ml_dir, 'svm.pkl')
+    has_pipeline = os.path.isfile(scaler_path) and os.path.isfile(pca_path)
 
     # Метки могут быть строками — конвертируем в целые числа
     # Маппинг строим по train+valid вместе, как при обучении
@@ -153,25 +168,45 @@ def _evaluate_model(model_path, test_x, test_y, train_y=None):
     else:
         y_true = y_raw.astype(np.int32)
 
-    # Модель обучена с sparse_categorical_crossentropy — передаём целые метки напрямую
-    # n_classes берём из самой модели, а не из данных
+    # SVM-пайплайн (лучший результат на датасете)
+    if has_pipeline and os.path.isfile(svm_path):
+        scaler = joblib.load(scaler_path)
+        pca    = joblib.load(pca_path)
+        svm    = joblib.load(svm_path)
+        X = _extract_fft_features(test_x)
+        X = pca.transform(scaler.transform(X))
+        y_pred = svm.predict(X)
+        acc = float(np.mean(y_pred == y_true))
+        per_sample = (y_pred == y_true).astype(float).tolist()
+        unique, counts = np.unique(y_pred, return_counts=True)
+        top5 = sorted(zip(unique.tolist(), counts.tolist()), key=lambda x: -x[1])[:5]
+        return acc, 0.0, {
+            'test_accuracy_per_sample': per_sample[:200],
+            'top5_valid_classes': [x[0] for x in top5],
+            'top5_counts': [x[1] for x in top5],
+        }
+
+    # Fallback: Keras MLP
+    X = np.array([np.array(x, dtype=np.float32).ravel() for x in test_x])
+    if X.ndim == 1:
+        X = np.expand_dims(X, 0)
+    if has_pipeline:
+        scaler = joblib.load(scaler_path)
+        pca    = joblib.load(pca_path)
+        X = pca.transform(scaler.transform(X))
     n_classes = model.output_shape[-1]
-
-    # Метки могут выходить за диапазон классов модели — обрезаем
     y_true = np.clip(y_true, 0, n_classes - 1)
-
     loss, acc = model.evaluate(X, y_true, verbose=0)
     pred = model.predict(X, verbose=0)
     y_pred = np.argmax(pred, axis=1)
     per_sample = (y_pred == y_true).astype(float).tolist()
     unique, counts = np.unique(y_pred, return_counts=True)
     top5 = sorted(zip(unique.tolist(), counts.tolist()), key=lambda x: -x[1])[:5]
-    chart_data = {
+    return float(acc), float(loss), {
         'test_accuracy_per_sample': per_sample[:200],
         'top5_valid_classes': [x[0] for x in top5],
         'top5_counts': [x[1] for x in top5],
     }
-    return float(acc), float(loss), chart_data
 
 
 def _chart_response(fig, dpi=100):
